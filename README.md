@@ -21,17 +21,31 @@ I also chose this issue because the proposed first phase, structured logging in 
 
 [In your own words, what's broken or missing?]
 
+Qlib currently has only basic observability support. It uses standard Python logging through `get_module_logger`, some manual timing through `TimeInspector`, and experiment metrics through `R.log_metrics()`, but these pieces are scattered and limited. There is no unified way to produce structured logs, collect system or workflow performance metrics, or trace execution across the major stages of a quant research pipeline. This makes it harder for users and contributors to debug slow workflows, understand bottlenecks, monitor model training behavior, inspect backtest execution costs, or observe online serving and rolling update processes.
+
 ### Expected Behavior
 
 [What should happen?]
+
+Qlib should provide an opt-in observability layer that helps users monitor and debug workflows without changing existing default behavior. At a minimum, users should be able to enable structured logging and get more useful machine-readable logs. Over time, Qlib should also support optional performance metrics collection and workflow tracing for important operations such as dataset loading, model training, backtesting, and online updates. The feature should be backward compatible, configurable through Qlib’s existing initialization/config flow, and impose little to no overhead when disabled.
 
 ### Current Behavior
 
 [What actually happens?]
 
+Right now, Qlib mostly logs plain text messages and occasionally records elapsed time with `TimeInspector`. Some training-related metrics are logged to the experiment recorder through `R.log_metrics()`, but this is focused on experiment results rather than system observability. There is no built-in support for structured log output, no centralized metrics collector, no exposed cache hit/miss monitoring, and no trace or span model for following execution across components. In practice, observability exists only in isolated pieces, so users have to inspect logs manually or add custom instrumentation themselves.
+
 ### Affected Components
 
 [Which parts of the codebase are involved?]
+
+- `qlib/qlib/log.py`: Core logging utilities, including `get_module_logger` and `TimeInspector`.
+- `qlib/qlib/config.py`: Global configuration handling, including `logging_config`and `qlib.init()` setup.
+- `qlib/qlib/model/trainer.py`: Training workflow entry points where model execution and task lifecycle metrics could be added.
+- `qlib/qlib/workflow/recorder.py`: Existing experiment metric logging that may be reused or extended for observability-related reporting.
+- `qlib/qlib/data/data.py` and `qlib/qlib/data/cache.py`: Data loading and cache behavior, which are important instrumentation points for performance and cache visibility.
+- `qlib/qlib/backtest/exchange.py` and `qlib/qlib/backtest/executor.py`: Backtest execution flow, where timing and decision/execution observability would be useful.
+- `qlib/qlib/workflow/online/` and `qlib/qlib/contrib/rolling/`: Online serving and rolling workflow code, where monitoring and tracing would help operational visibility.
 
 ---
 
