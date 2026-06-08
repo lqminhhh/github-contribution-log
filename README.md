@@ -1,15 +1,17 @@
-# Contribution [#]: [Issue Title]
+# Contribution [1]: enhance observability with structured logging and metrics
 
-**Contribution Number:** [1 / 2 / 3]  
-**Student:** [Your Name]  
-**Issue:** [GitHub issue link]  
-**Status:** [Phase I / Phase II / Phase III / Phase IV] [In Progress / Complete]
+**Contribution Number:** 1  
+**Student:** Minh Le  
+**Issue:** https://github.com/microsoft/qlib/issues/2098    
+**Status:** Phase I (In Progress)
 
 ---
 
 ## Why I Chose This Issue
 
-[1-2 paragraphs explaining why this issue interests you, how it matches your skills/learning goals, what you hope to learn]
+I chose this issue because it connects directly to my interests in Python, data infrastructure, and AI/ML tooling. Qlib is a quantitative research and machine learning platform, so contributing to its logging or observability system would help me better understand how large open-source data/AI projects are maintained in practice. The issue is also meaningful because better observability can help users identify bottlenecks, debug workflows, and compare performance across data processing, model training, and backtesting tasks.
+
+I also chose this issue because the proposed first phase, structured logging in qlib/log.py, seems like a possible entry point for a first open-source contribution if the scope is narrowed carefully. I do not plan to take on the full issue at once because the complete proposal includes structured logging, metrics, tracing, configuration changes, and updates across several modules. My initial goal is to ask for mentor and maintainer feedback on whether a smaller contribution focused only on opt-in structured logging would be acceptable.
 
 ---
 
