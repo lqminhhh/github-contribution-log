@@ -19,25 +19,17 @@ I also chose this issue because the proposed first phase, structured logging in 
 
 ### Problem Description
 
-[In your own words, what's broken or missing?]
-
 Qlib currently has only basic observability support. It uses standard Python logging through `get_module_logger`, some manual timing through `TimeInspector`, and experiment metrics through `R.log_metrics()`, but these pieces are scattered and limited. There is no unified way to produce structured logs, collect system or workflow performance metrics, or trace execution across the major stages of a quant research pipeline. This makes it harder for users and contributors to debug slow workflows, understand bottlenecks, monitor model training behavior, inspect backtest execution costs, or observe online serving and rolling update processes.
 
 ### Expected Behavior
-
-[What should happen?]
 
 Qlib should provide an opt-in observability layer that helps users monitor and debug workflows without changing existing default behavior. At a minimum, users should be able to enable structured logging and get more useful machine-readable logs. Over time, Qlib should also support optional performance metrics collection and workflow tracing for important operations such as dataset loading, model training, backtesting, and online updates. The feature should be backward compatible, configurable through Qlib’s existing initialization/config flow, and impose little to no overhead when disabled.
 
 ### Current Behavior
 
-[What actually happens?]
-
 Right now, Qlib mostly logs plain text messages and occasionally records elapsed time with `TimeInspector`. Some training-related metrics are logged to the experiment recorder through `R.log_metrics()`, but this is focused on experiment results rather than system observability. There is no built-in support for structured log output, no centralized metrics collector, no exposed cache hit/miss monitoring, and no trace or span model for following execution across components. In practice, observability exists only in isolated pieces, so users have to inspect logs manually or add custom instrumentation themselves.
 
 ### Affected Components
-
-[Which parts of the codebase are involved?]
 
 - `qlib/qlib/log.py`: Core logging utilities, including `get_module_logger` and `TimeInspector`.
 - `qlib/qlib/config.py`: Global configuration handling, including `logging_config`and `qlib.init()` setup.
@@ -53,19 +45,34 @@ Right now, Qlib mostly logs plain text messages and occasionally records elapsed
 
 ### Environment Setup
 
-[Notes on setting up your local development environment - challenges you faced, how you solved them]
+I used the local `qlib/` repository checked out inside this workspace and reviewed the current code on the `main` branch. Since this issue is a feature gap rather than a crash or failing behavior, my "reproduction" process focused on confirming that the requested observability features do not currently exist in the codebase.
+
+My setup work in Week 2 was mainly code reading and repo inspection:
+
+- Reviewed `qlib/README.md` and `qlib/docs/index.rst` to understand the project structure and major subsystems.
+- Inspected `qlib/qlib/log.py`, `qlib/qlib/config.py`, `qlib/qlib/cli/run.py`, `qlib/qlib/model/trainer.py`, and `qlib/qlib/workflow/recorder.py`.
+- Searched the repository for `get_module_logger`, `TimeInspector`, `R.log_metrics`, `structured`, `observability`, `tracing`, and related terms to verify the current implementation status.
+
+I did not need to fully run a Qlib workflow yet to confirm the issue, because the missing functionality is visible directly in the source code and configuration layer.
 
 ### Steps to Reproduce
 
-1. [Step 1]
-2. [Step 2]
-3. [Observed result]
+1. Open `qlib/qlib/log.py` and inspect the logging utilities used throughout Qlib.
+2. Confirm that `get_module_logger` returns a wrapper around standard Python logging and that `TimeInspector` only provides manual timing logs.
+3. Open `qlib/qlib/config.py` and inspect the default `logging_config` and `qlib.init()` configuration handling.
+4. Search the repository for observability-related terms such as `structured`, `observability`, `trace`, `MetricsCollector`, `prometheus`, and `OpenTelemetry`.
+5. Inspect workflow- and training-related modules such as `qlib/qlib/model/trainer.py` and `qlib/qlib/workflow/recorder.py` to see how metrics are currently recorded.
+6. Observe that:
+   - __No built-in structured logging API__
+   - __No centralized metrics collection abstraction__
+   - __No trace/span workflow instrumentation__
+   - __Existing metrics logging is limited to experiment tracking via `R.log_metrics()`__
 
 ### Reproduction Evidence
 
-- **Commit showing reproduction:** [Link to commit in your fork]
-- **Screenshots/logs:** [If applicable]
-- **My findings:** [What you discovered during reproduction]
+- **Commit showing reproduction:** Not applicable yet. This week focused on verifying the current repository state and narrowing scope before implementation.
+- **Screenshots/logs:** Not applicable. The evidence for this issue is primarily in the current source code and configuration surface.
+- **My findings:** The issue is still relevant in the current `qlib/main` branch. Qlib has plain-text logging, some manual timing through `TimeInspector`, and experiment metrics through `R.log_metrics()`, but it does not yet have an opt-in structured logging mode, a unified observability layer, or workflow tracing support.
 
 ---
 
@@ -73,30 +80,57 @@ Right now, Qlib mostly logs plain text messages and occasionally records elapsed
 
 ### Analysis
 
-[Your analysis of the root cause - what's causing the issue?]
+The root cause is not a single bug in one file. The larger issue is that Qlib's observability support grew in a piecemeal way. Logging, timing, and metrics exist in different places, but they are not designed as one coherent system.
+
+From my review of the current code:
+
+- `qlib/qlib/log.py` provides a logger wrapper and `TimeInspector`, but there is no structured formatter or structured logger interface.
+- `qlib/qlib/config.py` supports normal Python `logging_config`, but there is no first-class observability configuration model for structured logging, metrics, or tracing.
+- `qlib/qlib/model/trainer.py` and other workflow modules do useful work, but they do not emit standardized performance or lifecycle metrics in a reusable way.
+- `qlib/qlib/workflow/recorder.py` supports experiment metrics, which is useful, but that is different from system-level observability.
+
+Because the issue touches __multiple subsystems__, trying to solve everything at once would create too much scope for a first contribution. The practical root cause for the first phase is that Qlib lacks an extensible, opt-in logging foundation that later metrics and tracing work could build on.
 
 ### Proposed Solution
 
-[High-level description of your fix approach]
+My proposed approach is to break the issue into smaller, reviewable phases and start with the lowest-risk, highest-value slice: opt-in structured logging.
+
+First of all, I plan to:
+
+- extend the logging utilities in `qlib/qlib/log.py` so Qlib can emit structured log output when explicitly enabled,
+- add configuration support through `qlib.init()` / `logging_config` in `qlib/qlib/config.py`,
+- preserve the current default logging behavior for all existing users,
+- add tests and usage examples so the new behavior is documented and safe to review.
 
 ### Implementation Plan
 
-Using UMPIRE framework (adapted):
+UMPIRE framework:
 
-**Understand:** [Restate the problem]
+- **Understand:** Qlib currently has basic logging and some timing/experiment metrics, but it does not have an opt-in structured logging mode or a unified observability foundation.
 
-**Match:** [What similar patterns/solutions exist in the codebase?]
+- **Match:** Qlib already centralizes logging through `get_module_logger`, applies global logging configuration through `qlib.init()`, and records some experiment metrics through `R.log_metrics()`. These existing hooks mean a structured logging feature can likely be added without rewriting the whole logging surface.
 
-**Plan:** [Step-by-step implementation plan]
-1. [Modify file X to do Y]
-2. [Add function Z]
-3. [Update tests]
+- **Plan:**  
+    1. Review `qlib/qlib/log.py` and decide the least invasive way to support structured logging while preserving the current logger wrapper design.  
+    2. Update `qlib/qlib/config.py` so structured logging can be enabled through configuration without changing defaults.  
+    3. Confirm that CLI-driven workflows in `qlib/qlib/cli/run.py` still initialize logging correctly under both default and structured modes.  
+    4. Add focused tests for backward compatibility and structured output behavior.  
+    5. Document example usage for enabling structured logging.  
 
-**Implement:** [Link to your branch/commits as you work]
+- **Implement:** I have not started coding yet. My next implementation step is to narrow the first PR to structured logging only and then create a working branch for that slice.
 
-**Review:** [Self-review checklist - does it follow the project's contribution guidelines?]
+- **Review:**  
+    - Keep the feature opt-in.  
+    - Do not change existing logging behavior by default.  
+    - Keep the PR focused on a small number of files.  
+    - Follow existing Qlib patterns instead of introducing a separate logging framework too early.  
+    - Add tests for any public-facing config or behavior change.  
 
-**Evaluate:** [How will you verify it works?]
+- **Evaluate:** I will verify the first PR by checking that:
+    - existing logger behavior remains unchanged when structured logging is disabled,
+    - structured logging can be enabled through config,
+    - structured fields are emitted in the expected format,
+    - and representative workflow entry points still initialize and use logging correctly.
 
 ---
 
@@ -104,36 +138,48 @@ Using UMPIRE framework (adapted):
 
 ### Unit Tests
 
-- [ ] Test case 1: [Description]
-- [ ] Test case 2: [Description]
-- [ ] Test case 3: [Description]
+- [ ] Default logger behavior remains unchanged when structured logging is not enabled.
+- [ ] Structured logging mode can be enabled through configuration and produces machine-readable output.
+- [ ] Logger calls that include additional fields (for example through `extra`) are handled correctly in structured mode.
 
 ### Integration Tests
 
-- [ ] Integration scenario 1
-- [ ] Integration scenario 2
+- [ ] Initialize Qlib through `qlib.init()` with default logging config and confirm existing workflows still start normally.
+- [ ] Initialize Qlib with structured logging enabled and confirm the CLI/workflow entry path still uses the configured logger behavior.
 
 ### Manual Testing
 
-[What you tested manually and results]
+This week, my manual testing was focused on repository inspection rather than runtime behavior. I manually verified that the issue is still relevant by reviewing the current implementations of logging, configuration, workflow setup, and metrics logging. I confirmed that structured logging, centralized observability configuration, and tracing support are not currently present in the repo.
 
 ---
 
 ## Implementation Notes
 
-### Week [X] Progress
+### Week 2 Progress
 
-[What you built this week, challenges faced, decisions made]
+This week I focused on understanding the project, validating that the issue is still relevant, and narrowing the scope of a realistic first contribution.
 
-### Week [Y] Progress
+Completed this week:
+
+- [x] reviewed the Qlib repository structure and identified the major subsystems relevant to the issue,
+- [x] read the current logging, config, workflow, and trainer entry points,
+- [x] confirmed that the observability issue is still relevant on the current `main` branch,
+- [x] wrote a scoped contribution plan,
+- [x] and narrowed the likely first PR to opt-in structured logging instead of the full observability roadmap.
+
+Main challenge:
+
+- The issue as written is very broad and spans logging, metrics, tracing, data workflows, training, backtesting, and online serving. The main decision this week was to avoid treating it as one large implementation task and instead define a small first slice that could realistically be reviewed and merged.
+
+### Week 3 Progress
 
 [Continue documenting as you work]
 
 ### Code Changes
 
-- **Files modified:** [List]
-- **Key commits:** [Links to important commits]
-- **Approach decisions:** [Why you chose certain approaches]
+- **Files modified:** Not applicable.
+- **Key commits:** To be added once changes are pushed to my fork.
+- **Approach decisions:** I chose to document and scope the work before coding because this issue is broad and could easily become too large for a first PR. My plan is to validate a narrow structured-logging-first approach before implementing changes in `qlib/`.
 
 ---
 
