@@ -3,7 +3,7 @@
 **Contribution Number:** 1  
 **Student:** Minh Le  
 **Issue:** https://github.com/microsoft/qlib/issues/2098    
-**Status:** Phase I (In Progress)
+**Status:** Phase III (In Progress)
 
 ---
 
@@ -138,9 +138,9 @@ UMPIRE framework:
 
 ### Unit Tests
 
-- [ ] Default logger behavior remains unchanged when structured logging is not enabled.
-- [ ] Structured logging mode can be enabled through configuration and produces machine-readable output.
-- [ ] Logger calls that include additional fields (for example through `extra`) are handled correctly in structured mode.
+- [x] Default logger behavior remains unchanged when the JSON formatter is not selected.
+- [x] The opt-in JSON formatter produces machine-readable output with timestamp, level, logger name, and message fields.
+- [x] Logger calls that include additional fields through `extra` preserve those fields in JSON output.
 
 ### Integration Tests
 
@@ -149,7 +149,7 @@ UMPIRE framework:
 
 ### Manual Testing
 
-This week, my manual testing was focused on repository inspection rather than runtime behavior. I manually verified that the issue is still relevant by reviewing the current implementations of logging, configuration, workflow setup, and metrics logging. I confirmed that structured logging, centralized observability configuration, and tracing support are not currently present in the repo.
+I ran `python -m pytest tests/test_log.py -q` in a Python 3.12 development environment. All three focused tests passed. Configuration-level and workflow integration tests remain as the next implementation increment.
 
 ---
 
@@ -173,13 +173,23 @@ Main challenge:
 
 ### Week 3 Progress
 
-[Continue documenting as you work]
+This week I implemented the first focused slice of issue #2098:
+
+- added an opt-in `JSONFormatter` to `qlib/log.py`,
+- included standard timestamp, severity, logger name, and message fields in each JSON record,
+- preserved fields supplied through Python logging's `extra` argument,
+- kept Qlib's existing plain-text behavior unchanged by default,
+- added three focused unit tests in `tests/test_log.py`,
+- and verified that all three tests pass under Python 3.12.
+
+The main environment challenge was that the original Conda base environment used unsupported Python 3.13 and was missing `setuptools_scm`. I resolved this by using a Python 3.12 Qlib development environment before running the tests.
 
 ### Code Changes
 
-- **Files modified:** Not applicable.
-- **Key commits:** To be added once changes are pushed to my fork.
-- **Approach decisions:** I chose to document and scope the work before coding because this issue is broad and could easily become too large for a first PR. My plan is to validate a narrow structured-logging-first approach before implementing changes in `qlib/`.
+- **Branch:** [`fix-issue-2098`](https://github.com/lqminhhh/qlib/tree/fix-issue-2098)
+- **Files modified:** `qlib/log.py`, `tests/test_log.py`
+- **Key commit:** [`cb76ffc8` — feat: add structured JSON log formatter](https://github.com/lqminhhh/qlib/commit/cb76ffc8)
+- **Approach decisions:** I used a standard `logging.Formatter` implementation so structured output remains opt-in and can build on Python's existing `dictConfig` support without changing current logger behavior. The next increment is configuration-level validation and workflow integration testing.
 
 ---
 
