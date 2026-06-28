@@ -187,9 +187,54 @@ The main environment challenge was that the original Conda base environment used
 ### Code Changes
 
 - **Branch:** [`fix-issue-2098`](https://github.com/lqminhhh/qlib/tree/fix-issue-2098)
-- **Files modified:** `qlib/log.py`, `tests/test_log.py`
+- **Files modified:** `qlib/log.py`, `qlib/config.py`, `qlib/metrics.py`, `tests/test_log.py`, `tests/test_metrics.py`
 - **Key commit:** [`cb76ffc8` — feat: add structured JSON log formatter](https://github.com/lqminhhh/qlib/commit/cb76ffc8)
-- **Approach decisions:** I used a standard `logging.Formatter` implementation so structured output remains opt-in and can build on Python's existing `dictConfig` support without changing current logger behavior. The next increment is configuration-level validation and workflow integration testing.
+- **Follow-up commit:** `2fe1aa08` — add compact structured logging config support and internal config normalization
+- **Approach decisions:** I used standard Python logging configuration for structured output and a small in-memory metrics recorder for the metrics foundation, keeping both features opt-in and dependency-free by default. The next increment is adding targeted instrumentation points in Qlib's data/cache or workflow code.
+
+### Week 4 Progress
+
+This week I continued expanding the implementation toward the full issue scope instead of submitting a structured-logging-only PR.
+
+Completed this increment:
+
+- added compact structured logging config support through `qlib.init(logging_config={"structured": True, "format": "json"})`,
+- kept normal Python `dictConfig` logging support compatible,
+- added JSON exception serialization coverage,
+- added a config-level test proving structured logging can be enabled through Qlib logging config,
+- updated the implementation plan to continue toward metrics and tracing before opening the upstream PR.
+
+Current implementation status:
+
+- Structured logging foundation is implemented.
+- Config-level structured logging enablement is implemented.
+- Metrics collection is the next active implementation area.
+- Workflow tracing remains pending and may be deferred if the PR becomes too large.
+
+Next planned increment:
+
+- Add a lightweight, dependency-free metrics recorder that is disabled by default.
+- Support counters, gauges, and timers.
+- Add tests proving disabled-mode safety and enabled in-memory metric collection.
+
+Metrics foundation progress:
+
+- added `qlib.metrics` with a disabled-by-default no-op recorder,
+- added an in-memory recorder for enabled metrics,
+- supported counters, gauges, timings, timer context manager usage, and optional tags,
+- added `metrics_config={"enabled": True}` support through Qlib config,
+- added focused unit tests in `tests/test_metrics.py`,
+- verified the structured logging and metrics tests together:
+
+```bash
+conda run -n qlib-dev python -m pytest tests/test_log.py tests/test_metrics.py -q
+```
+
+Result:
+
+```text
+10 passed
+```
 
 ---
 
