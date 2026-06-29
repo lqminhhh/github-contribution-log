@@ -236,6 +236,88 @@ Result:
 10 passed
 ```
 
+First instrumentation progress:
+
+- added cache metrics to `SimpleDatasetCache`:
+  - `qlib.cache.dataset.hit`
+  - `qlib.cache.dataset.miss`
+  - `qlib.cache.dataset.load_seconds`
+- added cache metrics to `MemoryCalendarCache`:
+  - `qlib.cache.calendar.hit`
+  - `qlib.cache.calendar.miss`
+  - `qlib.cache.calendar.load_seconds`
+- added metric tags for cache type and frequency, for example `cache=simple,freq=day`,
+- added unit tests with fake providers so cache instrumentation can be verified without downloading Qlib data,
+- re-ran the focused logging + metrics test suite:
+
+```bash
+conda run -n qlib-dev python -m pytest tests/test_log.py tests/test_metrics.py -q
+```
+
+Result:
+
+```text
+12 passed
+```
+
+Metrics export/reporting progress:
+
+- added `metrics.export()` as an explicit way to return collected metrics as a plain dictionary,
+- added `metrics.summary()` for a human-readable summary of counters, gauges, and timing statistics,
+- added `metrics.log_summary()` for optional logger-based reporting,
+- kept reporting optional and dependency-free,
+- added tests for export output, summary formatting, and logger-based reporting,
+- re-ran the focused logging + metrics test suite:
+
+```bash
+conda run -n qlib-dev python -m pytest tests/test_log.py tests/test_metrics.py -q
+```
+
+Result:
+
+```text
+15 passed
+```
+
+Basic tracing progress:
+
+- added lightweight `qlib.trace` support with no required external tracing dependency,
+- added `trace_span(...)` context manager for creating spans when tracing is enabled,
+- added nested span support with shared `trace_id` and `parent_span_id`,
+- added `tracing_config={"enabled": True}` support through Qlib config,
+- updated structured JSON logging so active spans add `trace_id`, `span_id`, and `span_name`,
+- verified disabled tracing has no effect on structured logs,
+- added focused tracing tests and JSON logging trace-context tests,
+- re-ran the focused logging + metrics + tracing test suite:
+
+```bash
+conda run -n qlib-dev python -m pytest tests/test_log.py tests/test_metrics.py tests/test_trace.py -q
+```
+
+Result:
+
+```text
+21 passed
+```
+
+Real tracing instrumentation progress:
+
+- wrapped `SimpleDatasetCache` dataset loading with a `cache.dataset` trace span,
+- wrapped `MemoryCalendarCache` calendar loading with a `cache.calendar` trace span,
+- updated fake-provider tests to confirm real provider calls execute inside active trace context,
+- verified cache spans expose `trace_id`, `span_id`, and `span_name`,
+- re-ran the focused logging + metrics + tracing test suite:
+
+```bash
+conda run -n qlib-dev python -m pytest tests/test_log.py tests/test_metrics.py tests/test_trace.py -q
+```
+
+Result:
+
+```text
+23 passed
+```
+
 ---
 
 ## Pull Request
