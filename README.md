@@ -3,7 +3,7 @@
 **Contribution Number:** 1  
 **Student:** Minh Le  
 **Issue:** https://github.com/microsoft/qlib/issues/2098    
-**Status:** Phase III (In Progress)
+**Status:** Phase IV Complete (PR Submitted - Awaiting Review)
 
 ---
 
@@ -318,19 +318,39 @@ Result:
 23 passed
 ```
 
+Real-data notebook validation:
+
+- added `qlib_observability_real_data_test.ipynb` to test the contribution like a real Qlib user,
+- initialized Qlib with structured logging, metrics, tracing, and `SimpleDatasetCache`,
+- used real Qlib daily CN data through `D.features(...)`,
+- verified JSON logs, metrics export/summary, and cache trace spans,
+- caught and fixed a compact logging config issue that appeared when Qlib worker processes re-registered config,
+- added a regression test for compact structured logging config expansion in worker-style config registration.
+
+Final focused test result:
+
+```bash
+conda run -n qlib-dev python -m pytest tests/test_log.py tests/test_metrics.py tests/test_trace.py -q
+```
+
+Result:
+
+```text
+24 passed
+```
+
 ---
 
 ## Pull Request
 
-**PR Link:** [GitHub PR URL when submitted]
+**PR Link:** [microsoft/qlib#2283](https://github.com/microsoft/qlib/pull/2283)
 
-**PR Description:** [Draft or final PR description - much of the content above can be adapted]
+**PR Description:** Added an opt-in observability foundation for Qlib, including structured JSON logging, lightweight metrics collection/export, cache hit/miss/load timing metrics, and lightweight trace spans that can add trace context to structured logs.
 
 **Maintainer Feedback:**
-- [Date]: [Summary of feedback received]
-- [Date]: [How you addressed it]
+- June 29, 2026: PR submitted and awaiting maintainer review.
 
-**Status:** [Awaiting review / Iterating / Approved / Merged]
+**Status:** Awaiting review
 
 ---
 
@@ -338,20 +358,26 @@ Result:
 
 ### Technical Skills Gained
 
-[What you learned technically]
+- Learned how Qlib initializes logging through `dictConfig` and `qlib.init(...)`.
+- Practiced adding opt-in observability without changing default behavior.
+- Learned how to use Python `contextvars` for lightweight trace/span context.
+- Added focused tests for logging formatters, metrics recorders, cache instrumentation, and trace context.
 
 ### Challenges Overcome
 
-[What was hard and how you solved it]
+- The original issue was broad, so I broke the work into structured logging, metrics, reporting, and tracing.
+- A real-data notebook revealed that compact structured logging config needed to expand correctly inside Qlib worker processes. I fixed this and added regression coverage.
 
 ### What I'd Do Differently Next Time
 
-[Reflection on your process]
+- I would create a real-data smoke test earlier, because it exposed integration behavior that unit tests alone did not catch.
+- I would ask maintainers earlier whether they prefer one broad observability PR or several smaller PRs.
 
 ---
 
 ## Resources Used
 
-- [Link to helpful documentation]
-- [Tutorial or Stack Overflow post that helped]
-- [GitHub issues or discussions that helped]
+- [Qlib issue #2098](https://github.com/microsoft/qlib/issues/2098)
+- [Submitted PR #2283](https://github.com/microsoft/qlib/pull/2283)
+- Python logging `dictConfig`
+- Python `contextvars`
